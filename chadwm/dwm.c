@@ -320,7 +320,6 @@ static void seturgent(Client *c, int urg);
 static void show(Client *c);
 static void showhide(Client *c);
 static void showtagpreview(int tag);
-static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void switchtag(void);
 static Monitor *systraytomon(Monitor *m);
@@ -2886,9 +2885,16 @@ void setup(void) {
   int i;
   XSetWindowAttributes wa;
   Atom utf8string;
+  struct sigaction sa;
 
-  /* clean up any zombies immediately */
-  sigchld(0);
+  /* do not transform children into zombies when they terminate */
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_NOCLDSTOP | SA_NOCLDWAIT | SA_RESTART;
+  sa.sa_handler = SIG_IGN;
+  sigaction(SIGCHLD, &sa, NULL);
+
+  /* clean up any zombies (inherited from .xinitrc etc) immediately */
+  while (waitpid(-1, NULL, WNOHANG) > 0);
 
   /* init screen */
   screen = DefaultScreen(dpy);
@@ -3042,15 +3048,6 @@ showtagpreview(int tag)
 	} else
 		XUnmapWindow(dpy, selmon->tagwin);
 }
-
-
-void sigchld(int unused) {
-  if (signal(SIGCHLD, sigchld) == SIG_ERR)
-	  die("can't install SIGCHLD handler:");
-  while (0 < waitpid(-1, NULL, WNOHANG))
-    ;
-}
-
 
 void spawn(const Arg *arg) {
   if (arg->v == dmenucmd)
