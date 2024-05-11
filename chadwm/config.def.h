@@ -31,8 +31,12 @@ static const int colorfultag        = 1;        /* 0 means use SchemeSel for sel
 static const char *upvol[]   = { "/usr/bin/pactl", "set-sink-volume", "0", "+5%",     NULL };
 static const char *downvol[] = { "/usr/bin/pactl", "set-sink-volume", "0", "-5%",     NULL };
 static const char *mutevol[] = { "/usr/bin/pactl", "set-sink-mute",   "0", "toggle",  NULL };
-static const char *light_up[] = {"/usr/bin/light", "-A", "5", NULL};
-static const char *light_down[] = {"/usr/bin/light", "-U", "5", NULL};
+static const char *light_up[] = {"busctl", "call", "org.clightd.clightd", "/org/clightd/clightd/Backlight2", "org.clightd.clightd.Backlight2", "Raise", "d(du)", "0.1", "0", "0", NULL};
+static const char *light_down[] = {"busctl", "call", "org.clightd.clightd", "/org/clightd/clightd/Backlight2", "org.clightd.clightd.Backlight2", "Lower", "d(du)", "0.1", "0", "0", NULL};
+/*keyboardlight, need clightd package (AUR)*/
+static const char *lightkbd_up[] = {"busctl", "call", "org.clightd.clightd", "/org/clightd/clightd/KbdBacklight", "org.clightd.clightd.KbdBacklight", "Set", "d", "0.6", NULL};
+static const char *lightkbd_down[] = {"busctl", "call", "org.clightd.clightd", "/org/clightd/clightd/KbdBacklight", "org.clightd.clightd.KbdBacklight", "Set", "d", "0.3", NULL};
+
 static const int new_window_attach_on_end = 0; /*  1 means the new window will attach on the end; 0 means the new window will attach on the front,default is front */
 #define ICONSIZE 19   /* icon size */
 #define ICONSPACING 8 /* space between icon and title */
@@ -40,7 +44,7 @@ static const int new_window_attach_on_end = 0; /*  1 means the new window will a
 static const char *fonts[]          = {"Iosevka:style:medium:size=12" ,"JetBrainsMono Nerd Font Mono:style:medium:size=19" };
 
 // theme
-#include "themes/onedark.h"
+#include "themes/nord.h"
 
 static const char *colors[][3]      = {
     /*                     fg       bg      border */
@@ -50,11 +54,12 @@ static const char *colors[][3]      = {
     [TabSel]           = { blue,    gray2,  black },
     [TabNorm]          = { gray3,   black,  black },
     [SchemeTag]        = { gray3,   black,  black },
-    [SchemeTag1]       = { blue,    black,  black },
-    [SchemeTag2]       = { red,     black,  black },
+    [SchemeTag1]       = { aurora,  black,  black },
+    [SchemeTag2]       = { blue,    black,  black },
     [SchemeTag3]       = { orange,  black,  black },
-    [SchemeTag4]       = { green,   black,  black },
-    [SchemeTag5]       = { pink,    black,  black },
+    [SchemeTag4]       = { red,     black,  black },
+    [SchemeTag5]       = { green,   black,  black },
+    //[SchemeTag5]       = { pink,    black,  black },
     [SchemeLayout]     = { green,   black,  black },
     [SchemeBtnPrev]    = { green,   black,  black },
     [SchemeBtnNext]    = { yellow,  black,  black },
@@ -62,8 +67,7 @@ static const char *colors[][3]      = {
 };
 
 /* tagging */
-static char *tags[] = {"", "", "", "", ""};
-
+static char *tags[] = {"", "", "", "󰐌", "", ""};
 static const char* eww[] = { "eww", "open" , "eww", NULL };
 
 static const Launcher launchers[] = {
@@ -72,7 +76,7 @@ static const Launcher launchers[] = {
 };
 
 static const int tagschemes[] = {
-    SchemeTag1, SchemeTag2, SchemeTag3, SchemeTag4, SchemeTag5
+    SchemeTag1, SchemeTag2, SchemeTag3, SchemeTag4, SchemeTag5, SchemeTag1
 };
 
 static const unsigned int ulinepad      = 5; /* horizontal padding between the underline and tag */
@@ -87,8 +91,12 @@ static const Rule rules[] = {
      */
     /* class      instance    title       tags mask     iscentered   isfloating   monitor */
     { "Gimp",     NULL,       NULL,       0,            0,           1,           -1 },
-    { "Firefox",  NULL,       NULL,       1 << 8,       0,           0,           -1 },
+    { "firefox",  NULL,       NULL,       1 << 1,       0,           0,           -1 },
     { "eww",      NULL,       NULL,       0,            0,           1,           -1 },
+    { "st",       NULL,       NULL,       0,            1,           0,           -1 },
+    { "Zotero",   NULL,       NULL,       1 << 4,            1,           0,           -1 },
+    { NULL,   NULL,       "cmus",      1 << 3,            1,           0,           -1 },
+    { "Sublime_text",   NULL,       NULL,      1 << 2,            1,           0,           -1 },
 };
 
 /* layout(s) */
@@ -142,6 +150,9 @@ static const Key keys[] = {
 	{0,                       XF86XK_AudioRaiseVolume, spawn, {.v = upvol}},
 	{0,				XF86XK_MonBrightnessUp,		spawn,	{.v = light_up}},
 	{0,				XF86XK_MonBrightnessDown,	spawn,	{.v = light_down}},
+	{0,				XF86XK_KbdBrightnessUp,		spawn,	{.v = lightkbd_up}},
+	{0,				XF86XK_KbdBrightnessDown,	spawn,	{.v = lightkbd_down}},
+
 
     // screenshot fullscreen and cropped
     {MODKEY|ControlMask,                XK_u,       spawn,
@@ -227,7 +238,7 @@ static const Key keys[] = {
     { MODKEY|ShiftMask,                 XK_w,       setborderpx,    {.i = default_border } },
 
     // kill dwm
-    { MODKEY|ControlMask,               XK_q,       spawn,        SHCMD("killall bar.sh chadwm") },
+    { MODKEY|ControlMask,               XK_q,       spawn,        SHCMD("killall dash clight chadwm") },
 
     // kill window
     { MODKEY,                           XK_q,       killclient,     {0} },
